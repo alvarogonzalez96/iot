@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-
 {% block content %}
 <body>
    {% if amarillo == 0 %}
@@ -14,4 +13,4 @@
       <a class="btn verde" href="/18/0">Verde</a>
    {% endif %}
 </body>
-{% endblock %}
+</html>
