@@ -1,25 +1,6 @@
 <html>
 <head>
-   <style>
-      .btn { 
-         display:block;
-         margin: 20px;
-         padding: 20px 40px;
-         text-align: center;
-         border: 1px solid #000;
-         background: #ccc;
-         text-decoration: none;
-         font-size: 50px;
-         line-height: 3;
-         color: #000;
-      }
-      .btn.amarillo {
-         background: #ff0;
-      }
-      .btn.verde {
-         background: #0f0;
-      }
-   </style>
+   <link rel="stylesheet" href="{{ url_for('static', filename='/css/style.css') }}">
 </head>
 <body>
    {% if amarillo == 0 %}
