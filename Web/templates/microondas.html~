@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<body>
+   {% if amarillo == 0 %}
+      <a class="btn" href="/16/1">Amarillo</a>
+   {% else %}
+      <a class="btn amarillo" href="/16/0">Amarillo</a>
+   {% endif %}
+
+   {% if verde == 0 %}
+      <a class="btn" href="/18/1">Verde</a>
+   {% else %}
+      <a class="btn verde" href="/18/0">Verde</a>
+   {% endif %}
+</body>
+</html>
