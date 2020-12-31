@@ -15,13 +15,17 @@ GPIO.output(verde, GPIO.LOW)
 
 @app.route('/')
 def home():
+   return render_template('home.html')
+   
+@app.route('/micro')
+def micro():
    templateData = {
       'amarillo' : 0,
       'verde' : 0,
    }
    return render_template('microondas.html', **templateData)
 
-@app.route('/<led>/<action>')
+@app.route('/micro/<led>/<action>')
 def led(led, action):
    GPIO.output(int(led), int(action))
    templateData = {
@@ -29,6 +33,10 @@ def led(led, action):
       'verde' : GPIO.input(verde),
    }
    return render_template('microondas.html', **templateData)
+
+@app.route('/aboutus')
+def aboutus():
+   return render_template('aboutus.html')
 
 if __name__ == '__main__':
    app.run(host='0.0.0.0', port=8000, debug=True)

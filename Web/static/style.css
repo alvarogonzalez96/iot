@@ -16,3 +16,22 @@
 .btn.verde {
    background: #0f0;
 }
+
+.menu {
+	position: relative;
+	display: flex;
+}
+
+.menu .left {
+	width: 33%;
+	text-align: center;
+}
+
+.menu .center {
+	width: 33%;
+	text-align: center;
+}
+.menu .right {
+	width: 33%;
+	text-align: center;
+}
