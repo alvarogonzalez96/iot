@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  {% if g.user %}
+    <a class="action" href="{{ url_for('create') }}">New</a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div>
+  	{% if g.user %}
+    	<a class="action" href="{{ url_for('create') }}">New</a>
+  	{% endif %}
+  	</div>
+  	<div>
+  	<h1>KKKKKKK</h1>
+  		{% for post in posts %}	
+        <article class="post">
+          <header>
+            <div>
+              <h1>shsh
+                <a href="{{ url_for('post', id=post['id']) }}">{{ post['title'] }}</a> 
+              </h1>
+              <div class="about">by {{ post['username'] }} on {{ post['created'].strftime('%Y-%m-%d') }}</div>
+            </div>
+            {% if g.user['id'] == post['author_id'] %}
+              <a class="action" href="{{ url_for('update', id=post['id']) }}">Edit</a>
+            {% endif %}
+          </header>
+          <h4> Tiempo: {{post['tiempo']}} (s)
+          </h4>
+          
+        </article>
+        {% if not loop.last %}
+          <hr>
+        {% endif %}
+      {% endfor %}
+  	</div>
+{% endblock %}

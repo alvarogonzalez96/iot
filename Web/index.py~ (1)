@@ -1,0 +1,298 @@
+from flask import *
+
+import time
+
+import functools
+
+from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.exceptions import abort
+from db import get_db
+
+import os
+
+from flask import (
+    flash, g, redirect, render_template, request, session, url_for, send_from_directory, current_app
+)
+
+app = Flask(__name__)
+app.config.from_mapping(
+	SECRET_KEY='dev',
+	DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
+)
+
+# ensure the instance folder exists
+try:
+	os.makedirs(app.instance_path)
+except OSError:
+	pass
+
+import RPi.GPIO as GPIO
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BCM)
+
+# leds
+amarillo = 16
+verde = 18
+GPIO.setup(amarillo, GPIO.OUT)
+GPIO.output(amarillo, GPIO.LOW)
+GPIO.setup(verde, GPIO.OUT)
+GPIO.output(verde, GPIO.LOW)
+
+@app.route('/')
+def home():
+   return render_template('home.html')
+   
+@app.route('/micro')
+def micro():
+   templateData = {
+      'amarillo' : 0,
+      'verde' : 0,
+   }
+   return render_template('microondas.html', **templateData)
+	
+@app.route('/micro', methods=('GET', 'POST'))
+def calentar():
+	if request.method == 'POST':
+		tiempo = int(request.form['time'])
+		controlPuerta()
+		GPIO.output(int(16), int(1))
+		templateData = {
+			'amarillo' : GPIO.input(amarillo),
+			'verde' : GPIO.input(verde),
+		}
+		time.sleep(tiempo)
+		GPIO.output(int(16), int(0))
+		controlPuerta()
+		templateData = {
+			'amarillo' : GPIO.input(amarillo),
+			'verde' : GPIO.input(verde),
+		}
+		return render_template('microondas.html', **templateData)
+	return render_template('home.html')
+
+def controlPuerta():
+		GPIO.output(int(18), int(1))
+		time.sleep(1)
+		GPIO.output(int(18), int(0))
+
+@app.route('/index', methods=('GET', 'POST'))
+def index():
+    if request.method == 'POST':
+        tiempo = int(request.form['time'])
+        controlPuerta()
+        GPIO.output(int(16), int(1))
+        templateData = {
+        'amarillo' : GPIO.input(amarillo),
+        'verde' : GPIO.input(verde),
+        }
+        time.sleep(tiempo)
+        GPIO.output(int(16), int(0))
+        controlPuerta()
+        templateData = {
+        'amarillo' : GPIO.input(amarillo),
+        'verde' : GPIO.input(verde),
+        }
+        return render_template('index.html')
+    else:
+        db = get_db()
+        posts = db.execute(
+        'SELECT id, title, tiempo, temperatura'
+        ' FROM post '
+        ).fetchall()
+        return render_template('index.html', posts=posts)
+
+
+@app.route('/aboutus')
+def aboutus():
+   return render_template('aboutus.html')
+   
+@app.route('/register', methods=('GET', 'POST'))
+def register():
+    if request.method == 'POST':
+        email = request.form['email']
+        username = request.form['username']
+        password = request.form['password']
+        db = get_db()
+        error = None
+
+        if not email:
+            error = 'Email is required'
+        elif not username:
+            error = 'Username is required.'
+        elif not password:
+            error = 'Password is required.'
+        elif db.execute(
+            'SELECT id FROM user WHERE email = ?', (email,)
+        ).fetchone() is not None:
+            error = 'User {} is already registered.'.format(email)
+
+        if error is None:
+            db.execute(
+                'INSERT INTO user (email, username, password) VALUES (?, ?, ?)',
+                (email, username, generate_password_hash(password))
+            )
+            db.commit()
+            return redirect(url_for('login'))
+
+        flash(error)
+
+    return render_template('/register.html')
+    
+@app.route('/login', methods=('GET', 'POST'))
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        db = get_db()
+        error = None
+        user = db.execute(
+            'SELECT * FROM user WHERE email = ?', (email,)
+        ).fetchone()
+
+        if user is None:
+            error = 'Incorrect email.'
+        elif not check_password_hash(user['password'], password):
+            error = 'Incorrect password.'
+
+        if error is None:
+            session.clear()
+            session['user_id'] = user['id']
+            return redirect(url_for('index'))
+			
+        flash(error)
+       
+    return render_template('/login.html')
+@app.before_request
+def load_logged_in_user():
+    user_id = session.get('user_id')
+
+    if user_id is None:
+        g.user = None
+    else:
+        g.user = get_db().execute(
+            'SELECT * FROM user WHERE id = ?', (user_id,)
+        ).fetchone()
+        
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('home'))
+    
+def login_required(view):
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None:
+            return redirect(url_for('login'))
+
+        return view(**kwargs)
+
+    return wrapped_view
+ 
+@app.route('/create', methods=('GET', 'POST'))
+@login_required
+def create():
+    if request.method == 'POST':
+        title = request.form['title']
+        body = request.form['body']
+        tiempo = request.form['tiempo']
+        temperatura = request.form['temperatura']
+       
+        error = None
+
+        if not title:
+            error = 'Title is required.'
+        if not tiempo:
+        		error = 'Tiempo is required'
+        if not temperatura:
+        		error = 'Temperatura is required'
+
+        if error is not None:
+            flash(error)
+        else:
+            db = get_db()
+            db.execute(
+                'INSERT INTO post (title, author_id, body, tiempo, temperatura)'
+                ' VALUES (?, ?, ?, ?, ?)',
+                (title, body, g.user['id'], tiempo, temperatura)
+            )
+            db.commit()
+            return redirect(url_for('index'))
+
+    return render_template('create.html')
+
+def get_post(id, check_author=False):
+    post = get_db().execute(
+        'SELECT p.id, author_id,title, created, body, tiempo, temperatura'
+        ' FROM post p JOIN user u ON p.author_id = u.id'
+        ' WHERE p.id = ?',
+        (id,)
+    ).fetchone()
+
+    if post is None:
+        abort(404, "Post id {0} doesn't exist.".format(id))
+
+    if check_author and post['author_id'] != g.user['id']:
+        abort(403)
+
+    return post
+
+@app.route('/<int:id>/update', methods=('GET', 'POST'))
+@login_required
+def update(id):
+    post = get_post(id)
+
+    if request.method == 'POST':
+        title = request.form['title']
+        body = request.form['body']
+        tiempo = request.form['tiempo']
+        temperatura = request.form['temperatura']
+
+        error = None
+
+        if not title:
+            error = 'Title is required.'
+        elif not tiempo:
+        	error = 'Tiempo is required'
+        elif not temperatura:
+        	error = 'Temperatura is required'
+
+        if error is not None:
+            flash(error)
+        else:
+            db = get_db()
+            db.execute(
+                'UPDATE post SET title = ?, body = ?, tiempo = ?, temperatura = ?'
+                ' WHERE id = ?',
+                (title, body, tiempo, temperatura)
+            )
+            db.commit()
+            return redirect(url_for('home'))
+
+    return render_template('update.html', post=post)
+
+@app.route('/<int:id>/delete', methods=('POST',))
+@login_required
+def delete(id):
+    get_post(id)
+    db = get_db()
+    db.execute('DELETE FROM post WHERE id = ?', (id,))
+    db.commit()
+    return redirect(url_for('index'))
+
+@app.route('/post/<int:id>/', methods=('GET', 'POST'))
+def post(id):
+    post=get_post(id)
+    return render_template('post.html', post=post)
+
+import db
+db.init_app(app)
+app.add_url_rule('/', endpoint='index')
+
+if __name__ == '__main__':
+	app.run(host='0.0.0.0', port=8000, debug=True)	
+	
+	
+	
+	
+	
+	

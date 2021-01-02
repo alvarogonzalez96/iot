@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Posts{% endblock %}</h1>
+
+{% endblock %}
+
+{% block content %}
+  {% if g.user %}
+    <a class="action" href="{{ url_for('create') }}"> + Crea una nueva receta</a>
+  	<hr>
+  {% endif %}
+  {% for post in posts %}
+    <article class="post">
+      <header>
+        <div>
+          <h1>{{ post['title'] }}</h1>
+        </div>
+      </header>
+      <form method="POST">
+          <p>Elige el tiempo (s)<input type="number" name="time" min="1" max="3600" value="0" id="myRange"></p>
+  		    <p>Tiempo (s): {{ post['tiempo'] }}</p>
+  		    <p>Temperatura (ºC): {{ post['temperatura'] }}</p>
+  		    <input type="submit" value="Calentar!">
+	  </form>
+   </article>
+  {% if not loop.last %}
+  <hr>
+  {% endif %}
+ {% endfor %}
+
+{% endblock %}
