@@ -1,0 +1,47 @@
+<html>
+	<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+	<nav id="nav">
+		<h1><a href="{{ url_for('home') }}" > MICROONDAS AUTÓNOMO</a></h1>
+		  <ul>
+    		{% if g.user %}
+      		<li><span>{{ g.user['username'] }}</span>
+     			<li><a href="{{ url_for('logout') }}" id="logout">Log Out</a>
+   		{% else %}
+      		<li><a href="{{ url_for('register') }}">Register</a>
+      		<li><a href="{{ url_for('login') }}">Log In</a>
+    		{% endif %}
+  			</ul>
+  	</nav>	
+  	{% block header %}{% endblock %}
+	<head>
+	
+		<div class="menu" id="menusup">
+			<div class="menu left"> 
+				<h2>
+					<a href="{{ url_for('home') }}">Home</a>
+				</h2> 
+			</div>
+		
+			<div class="menu centerl"> 	
+				<h2>
+					<a href="{{ url_for('micro') }}">Microondas</a>
+				</h2> 
+			</div>
+			
+			<div class="menu centerr"> 	
+				<h2>
+					<a href="{{ url_for('index') }}">Recetas</a>
+				</h2> 
+			</div>
+		
+			<div class="menu right"> 
+				<h2>
+					<a href="{{ url_for('aboutus') }}">About us</a>
+				</h2> 
+			</div>
+		</div>
+		<hr>
+	</head>
+	{% block content %}{% endblock %}
+	
+</html>
